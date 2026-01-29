@@ -31,7 +31,7 @@ export default function Home() {
         <section className={styles.hero}>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>
-              We don’t predict markets —<br />
+              We don’t predict markets <br />
               we predict when markets become predictable.
             </h1>
             <p className={styles.heroSubtitle}>
