@@ -45,8 +45,25 @@ export function DemoDashboard() {
         }
     };
 
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        setMousePos({ x: e.clientX, y: e.clientY });
+    };
+
+    const jumpToRegime = (target: Regime) => {
+        setRegime(target);
+        if (target === "efficient") setProgress(10);
+        if (target === "emerging") setProgress(50);
+        if (target === "mechanical") setProgress(90);
+    };
+
     return (
-        <div className={styles.dashboard}>
+        <div className={styles.dashboard} onMouseMove={handleMouseMove} style={{
+            background: regime === "efficient" ? "#050505" :
+                regime === "emerging" ? "#05080f" : "#0a050f",
+            transition: "background 1s ease"
+        }}>
             <header className={styles.topBar}>
                 <div className={styles.logo}>Alpha Weather Monitor</div>
                 <div className={styles.statusIndicators}>
@@ -60,11 +77,17 @@ export function DemoDashboard() {
                 <div className={styles.panel}>
                     <div>
                         <label className={styles.sectionLabel}>Current Market State</label>
-                        <h2 className={styles.marketState}>
-                            {regime === "efficient" && "Efficient / Random"}
-                            {regime === "emerging" && "Emerging Structure"}
-                            {regime === "mechanical" && "Mechanical Flow"}
-                        </h2>
+                        <div className={styles.tooltipTrigger}>
+                            <h2 className={styles.marketState}>
+                                {regime === "efficient" && "Efficient / Random"}
+                                {regime === "emerging" && "Emerging Structure"}
+                                {regime === "mechanical" && "Mechanical Flow"}
+                            </h2>
+                            <div className={styles.tooltipContent}>
+                                Represents the current dominant force in price formation.
+                                Efficient markets are news-driven; Mechanical markets are flow-driven.
+                            </div>
+                        </div>
                         <p className={styles.interpretation}>
                             {getInterpretation()}
                         </p>
@@ -73,11 +96,21 @@ export function DemoDashboard() {
                     <div style={{ marginTop: "auto" }}>
                         <label className={styles.sectionLabel}>Live Metrics (Simulated)</label>
                         <div className={styles.metricRow}>
-                            <span>Alpha Weather Index</span>
+                            <span className={styles.tooltipTrigger}>
+                                Alpha Weather Index
+                                <div className={styles.tooltipContent}>
+                                    Composite score of cross-asset correlation decay and volatility synchronization.
+                                </div>
+                            </span>
                             <span className={styles.metricValue}>{indexValue.toFixed(1)}</span>
                         </div>
                         <div className={styles.metricRow}>
-                            <span>Regime Confidence</span>
+                            <span className={styles.tooltipTrigger}>
+                                Regime Confidence
+                                <div className={styles.tooltipContent}>
+                                    Statistical probability that the current regime persistence exceeds random chance.
+                                </div>
+                            </span>
                             <span className={styles.metricValue}>
                                 {progress > 80 || progress < 20 ? "HIGH" : "MODERATE"}
                             </span>
@@ -88,16 +121,23 @@ export function DemoDashboard() {
                                 {regime === "efficient" ? "0m" : regime === "emerging" ? "15m" : "45m"}
                             </span>
                         </div>
+
+                        <div className={styles.stabilityContainer}>
+                            <label className={styles.sectionLabel}>System Stability</label>
+                            <div className={styles.stabilityBar}>
+                                <div className={styles.stabilityFill} style={{
+                                    width: regime === "efficient" ? "90%" : regime === "emerging" ? "60%" : "30%",
+                                    backgroundColor: regime === "efficient" ? "#4caf50" : regime === "emerging" ? "#ff9800" : "#f44336"
+                                }} />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Center: Visual Surface */}
                 <div className={styles.visualSurface}>
-                    {/* We reuse the landing page surface but it will be contained here. 
-               In a real app we might pass props to make it react to 'regime'.
-               For now, it provides the "ambient" look requested. */}
                     <div style={{ position: 'absolute', inset: 0, opacity: 0.6 }}>
-                        <DemoSurface />
+                        <DemoSurface regime={regime} mousePosition={mousePos} />
                     </div>
 
                     {/* Center Overlay for extra "tech" feel */}
@@ -114,14 +154,16 @@ export function DemoDashboard() {
                         boxShadow: `0 0 60px ${regime === 'efficient' ? 'rgba(50,50,50,0.2)' :
                                 regime === 'emerging' ? 'rgba(59, 130, 246, 0.2)' :
                                     'rgba(139, 92, 246, 0.2)'
-                            }`
+                            }`,
+                        transition: "box-shadow 1s ease"
                     }}>
                         <div style={{
                             textAlign: 'center',
                             color: regime === 'efficient' ? '#555' :
                                 regime === 'emerging' ? '#3b82f6' : '#8b5cf6',
                             fontSize: '0.8rem',
-                            letterSpacing: '0.2em'
+                            letterSpacing: '0.2em',
+                            transition: "color 1s ease"
                         }}>
                             AWI-{Math.floor(indexValue)}
                         </div>
@@ -137,12 +179,18 @@ export function DemoDashboard() {
                         onProgressChange={handleProgressChange}
                     />
 
+                    <div className={styles.regimeMarkers}>
+                        <div className={styles.marker} data-label="Efficient" onClick={() => jumpToRegime("efficient")} />
+                        <div className={styles.marker} data-label="Emerging" onClick={() => jumpToRegime("emerging")} />
+                        <div className={styles.marker} data-label="Mechanical" onClick={() => jumpToRegime("mechanical")} />
+                    </div>
+
                     <div style={{ marginTop: "auto", fontSize: "0.75rem", color: "#444", lineHeight: "1.4" }}>
                         <p className={styles.sectionLabel}>System Notes</p>
                         <p>
                             Interactive demo environment.
                             Values are deterministic based on slider position.
-                            Drill-down views disabled in demo.
+                            Hover over metrics for definitions.
                         </p>
                     </div>
                 </div>
