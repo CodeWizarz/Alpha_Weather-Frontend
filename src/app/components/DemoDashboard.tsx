@@ -1,89 +1,94 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "../demo/demo.module.css";
-import { RegimeControl, Regime } from "./RegimeControl";
-import { DemoSurface } from "./DemoSurface";
+import { DemoSurface, Regime } from "./DemoSurface";
 
 export function DemoDashboard() {
-    const [regime, setRegime] = useState<Regime>("emerging");
-    const [progress, setProgress] = useState(45);
-    const [indexValue, setIndexValue] = useState(42.8);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [regime, setRegime] = useState<Regime>("efficient");
+    // "Efficient" is the starting state (Normal Market)
 
-    // NEW INTERACTIONS
-    const [orbMode, setOrbMode] = useState(0); // 0: Structural, 1: Flow, 2: Decay
-    const [showStress, setShowStress] = useState(false);
-    const [snapActive, setSnapActive] = useState(false);
+    const [showTransition, setShowTransition] = useState(false);
+    const [orbTextIndex, setOrbTextIndex] = useState(0);
 
-    // Deterministic updates based on interaction
+    // Automation for Orb Text
     useEffect(() => {
-        let base = 0;
-        if (regime === "efficient") base = 12.0;
-        if (regime === "emerging") base = 45.0;
-        if (regime === "mechanical") base = 88.0;
+        const interval = setInterval(() => {
+            setOrbTextIndex((prev) => (prev + 1) % 3);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
 
-        const noise = (Math.random() - 0.5) * 2;
-        const value = base + (progress / 10) + noise;
-        setIndexValue(Number(value.toFixed(1)));
-    }, [regime, progress]);
-
-    const handleProgressChange = (val: number) => {
-        setProgress(val);
-
-        // Snap Logic: 20 (Early), 50 (Peak), 80 (Decay)
-        const snaps = [20, 50, 80];
-        const isSnapping = snaps.some(s => Math.abs(val - s) < 3);
-
-        // Only update state if changed to avoid re-renders loop, though React handles basic equality
-        if (isSnapping !== snapActive) {
-            setSnapActive(isSnapping);
+    const handleScenarioChange = (newRegime: Regime) => {
+        if (newRegime !== regime) {
+            setRegime(newRegime);
+            setShowTransition(true);
+            setTimeout(() => setShowTransition(false), 1500);
         }
-
-        if (val < 20) setRegime("efficient");
-        else if (val > 80) setRegime("mechanical");
-        else if (val > 30 && val < 70 && regime === "efficient") setRegime("emerging");
-        else if (val > 30 && val < 70 && regime === "mechanical") setRegime("emerging");
     };
 
-    const getInterpretation = () => {
+    const getAnswer = () => {
         switch (regime) {
-            case "efficient":
-                return "Price action is dominated by news arrival. Alpha decay is instant. No structural predictability detected.";
-            case "emerging":
-                return "Market structure is forming. Flows are becoming correlated. Predictability windows are opening in the 15-30m horizon.";
-            case "mechanical":
-                return "Feedback loops are dominant. Passive rebalancing and volatility control flows are overriding fundamental price discovery.";
+            case "efficient": return { text: "NO", color: "#666" }; // Normal market = No structural alpha
+            case "emerging": return { text: "CAUTION", color: "#3b82f6" };
+            case "mechanical": return { text: "YES", color: "#8b5cf6" };
         }
     };
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        setMousePos({ x: e.clientX, y: e.clientY });
+    const getOrbText = () => {
+        const index = orbTextIndex;
+        if (regime === "efficient") {
+            return ["Predictability Low", "Alpha Decay Fast", "Noise Dominant"][index];
+        } else if (regime === "emerging") {
+            return ["Structure Emerging", "Flows Correlating", "Window Opening"][index];
+        } else {
+            return ["Structure Dominant", "Predictability High", "Feedback Loops Active"][index];
+        }
     };
 
-    const jumpToRegime = (target: Regime) => {
-        setRegime(target);
-        if (target === "efficient") setProgress(10);
-        if (target === "emerging") setProgress(50);
-        if (target === "mechanical") setProgress(90);
+    const getImplications = () => {
+        if (regime === "efficient") {
+            return [
+                "Prices follow random walk",
+                "News drives volatility",
+                "No persistent structural advantage"
+            ];
+        } else if (regime === "emerging") {
+            return [
+                "Liquidity pockets forming",
+                "Mean reversion windows opening",
+                "Correlations tightening"
+            ];
+        } else {
+            return [
+                "Short-horizon strategies behave mechanically",
+                "Hedging flows dominate price formation",
+                "Standing down reduces risk of decay"
+            ];
+        }
     };
 
-    const getStabilityWidth = () => {
-        if (showStress) return regime === "efficient" ? "10%" : regime === "emerging" ? "40%" : "70%";
-        return regime === "efficient" ? "90%" : regime === "emerging" ? "60%" : "30%";
+    const getActiveColor = () => {
+        switch (regime) {
+            case "efficient": return "#4caf50"; // Green for "Efficient/Safe" (or maybe Grey?) User said "Normal Market (Efficient)"
+            // Actually, usually "Efficient" means "No edge". Let's use a neutralized color or Green if it implies "Market is healthy".
+            // Implementation Plan says: efficient -> grey/green, emerging -> blue, mechanical -> purple.
+            // Let's stick to the color scheme in CSS.
+            case "emerging": return "#3b82f6";
+            case "mechanical": return "#8b5cf6";
+            default: return "#666";
+        }
     };
 
-    const getStabilityColor = () => {
-        if (showStress) return "#8b5cf6";
-        return regime === "efficient" ? "#4caf50" : regime === "emerging" ? "#ff9800" : "#f44336";
-    };
+    const activeColor = getActiveColor();
 
     return (
-        <div className={styles.dashboard} onMouseMove={handleMouseMove} style={{
+        <div className={styles.dashboard} style={{
+            "--active-color": activeColor,
             background: regime === "efficient" ? "#050505" :
-                regime === "emerging" ? "#05080f" : "#0a050f",
+                regime === "emerging" ? "#050810" : "#0a0510",
             transition: "background 1s ease"
-        }}>
+        } as React.CSSProperties}>
             <header className={styles.topBar}>
                 <div className={styles.logo}>Alpha Weather Monitor</div>
                 <div className={styles.statusIndicators}>
@@ -93,172 +98,122 @@ export function DemoDashboard() {
             </header>
 
             <main className={styles.mainContent}>
-                {/* Left Panel: Primary Output */}
-                <div className={styles.panel}>
-                    <div>
-                        <label className={styles.sectionLabel}>Current Market State</label>
-                        <div className={styles.tooltipTrigger}>
-                            <h2 className={styles.marketState} style={{
-                                textShadow: snapActive ? "0 0 15px rgba(255,255,255,0.3)" : "none",
-                                transition: "text-shadow 0.2s"
-                            }}>
-                                {regime === "efficient" && "Efficient / Random"}
-                                {regime === "emerging" && "Emerging Structure"}
-                                {regime === "mechanical" && "Mechanical Flow"}
-                            </h2>
-                            <div className={styles.tooltipContent}>
-                                Represents the current dominant force in price formation.
-                                Efficient markets are news-driven; Mechanical markets are flow-driven.
-                            </div>
+                {/* Left Panel: Question & Implications */}
+                <div className={styles.panel} style={{ borderRight: '1px solid #222' }}>
+                    <div className={styles.answerBlock}>
+                        <label className={styles.questionText}>Question: Is this market worth deploying strategies into?</label>
+                        <div className={styles.systemAnswer} style={{
+                            borderColor: getAnswer().color,
+                            color: getAnswer().text === "NO" ? "#888" : getAnswer().color,
+                            boxShadow: getAnswer().text !== "NO" ? `0 0 20px ${getAnswer().color}40` : "none"
+                        }}>
+                            System Answer: {getAnswer().text}
                         </div>
-                        <p className={styles.interpretation}>
-                            {getInterpretation()}
-                        </p>
                     </div>
 
-                    <div style={{ marginTop: "auto" }}>
-                        <label className={styles.sectionLabel}>Live Metrics (Simulated)</label>
-                        <div className={styles.metricRow}>
-                            <span className={styles.tooltipTrigger}>
-                                Alpha Weather Index
-                                <div className={styles.tooltipContent}>
-                                    Composite score of cross-asset correlation decay and volatility synchronization.
-                                </div>
-                            </span>
-                            <span className={styles.metricValue}>{indexValue.toFixed(1)}</span>
-                        </div>
-                        <div className={styles.metricRow}>
-                            <span className={styles.tooltipTrigger}>
-                                Regime Confidence
-                                <div className={styles.tooltipContent}>
-                                    Statistical probability that the current regime persistence exceeds random chance.
-                                </div>
-                            </span>
-                            <span className={styles.metricValue}>
-                                {progress > 80 || progress < 20 ? "HIGH" : "MODERATE"}
-                            </span>
-                        </div>
-                        <div className={styles.metricRow}>
-                            <span>Est. Window</span>
-                            <span className={styles.metricValue}>
-                                {regime === "efficient" ? "0m" : regime === "emerging" ? "15m" : "45m"}
-                            </span>
-                        </div>
-
-                        {/* Interactive Confidence Bar */}
-                        <div className={styles.stabilityContainer}
-                            onClick={() => setShowStress(!showStress)}
-                            style={{ cursor: "pointer" }}
-                        >
-                            <label className={styles.sectionLabel} style={{ display: "flex", justifyContent: "space-between" }}>
-                                {showStress ? "System Stress" : "System Stability"}
-                                <span style={{ opacity: 0.5, fontSize: '0.6rem' }}>CLICK TO TOGGLE</span>
-                            </label>
-                            <div className={styles.tooltipTrigger}>
-                                <div className={styles.stabilityBar}>
-                                    <div className={styles.stabilityFill} style={{
-                                        width: getStabilityWidth(),
-                                        backgroundColor: getStabilityColor()
-                                    }} />
-                                </div>
-                                <div className={styles.tooltipContent}>
-                                    {showStress ?
-                                        "Stress view shows instantaneous pressure from forced rebalancing." :
-                                        "Stability reflects how constrained market behavior is."}
-                                </div>
-                            </div>
-                        </div>
+                    <div>
+                        <label className={styles.sectionLabel}>What this means</label>
+                        <ul className={styles.implicationsList}>
+                            {getImplications().map((imp, i) => (
+                                <li key={i} className={styles.implicationItem} style={{ animationDelay: `${i * 100}ms` }}>
+                                    {imp}
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
 
                 {/* Center: Visual Surface */}
-                <div className={styles.visualSurface} style={{
-                    filter: snapActive ? "brightness(1.2)" : "none",
-                    transition: "filter 0.1s ease"
-                }}>
+                <div className={styles.visualSurface}>
                     <div style={{ position: 'absolute', inset: 0, opacity: 0.6 }}>
-                        <DemoSurface regime={regime} mousePosition={mousePos} />
+                        <DemoSurface regime={regime} mousePosition={{ x: 0, y: 0 }} />
+                        {/* Note: Mouse pos is handled internally primarily or we can pass it if we want generic tracking */}
                     </div>
 
-                    {/* Center Overlay: Interactive Core */}
-                    <div
-                        onClick={() => setOrbMode((orbMode + 1) % 3)}
-                        style={{
-                            zIndex: 5,
-                            border: `1px solid rgba(255,255,255,${orbMode !== 0 ? 0.3 : 0.1})`,
-                            padding: '20px',
-                            borderRadius: '50%',
-                            width: '300px',
-                            height: '300px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            boxShadow: `0 0 60px ${regime === 'efficient' ? 'rgba(50,50,50,0.2)' :
-                                regime === 'emerging' ? 'rgba(59, 130, 246, 0.2)' :
-                                    'rgba(139, 92, 246, 0.2)'
-                                }`,
-                            transition: "all 0.5s ease",
-                        }}>
-                        <div style={{
+                    {/* Interactive Orb */}
+                    <div style={{
+                        zIndex: 5,
+                        width: '280px',
+                        height: '280px',
+                        borderRadius: '50%',
+                        border: `1px solid ${activeColor}40`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 0 80px ${activeColor}20`,
+                        background: `radial-gradient(circle, ${activeColor}10 0%, transparent 70%)`,
+                        transition: "all 0.5s ease"
+                    }}>
+                        <div className={styles.orbText} style={{
                             textAlign: 'center',
-                            color: regime === 'efficient' ? '#555' :
-                                regime === 'emerging' ? '#3b82f6' : '#8b5cf6',
-                            fontSize: orbMode === 0 ? '0.8rem' : '0.9rem',
-                            letterSpacing: '0.2em',
-                            fontWeight: orbMode !== 0 ? '600' : '400',
-                            transition: "all 0.3s ease",
-                            transform: snapActive ? "scale(1.05)" : "scale(1)"
+                            color: activeColor,
+                            fontSize: '0.9rem',
+                            letterSpacing: '0.15em',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            animation: "fadeIn 0.5s ease"
                         }}>
-                            {orbMode === 0 && `AWI-${Math.floor(indexValue)}`}
-                            {orbMode === 1 && "FLOW DOMINANCE"}
-                            {orbMode === 2 && "DECAY RISK"}
+                            {getOrbText()}
+                        </div>
+                    </div>
+
+                    {/* Transition Overlay */}
+                    <div className={`${styles.transitionOverlay} ${showTransition ? styles.visible : ""}`}>
+                        Regime Shift Detected
+                    </div>
+
+                    {/* Demo Disclaimer */}
+                    <div className={styles.demoDisclaimer}>
+                        Alpha Weather Demo • Not Financial Advice
+                    </div>
+                </div>
+
+                {/* Right Panel: Guided Scenarios */}
+                <div className={`${styles.panel} ${styles.rightPanel}`}>
+                    <label className={styles.sectionLabel}>Explore Market Scenarios</label>
+
+                    <div className={styles.scenarioList} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div
+                            className={`${styles.scenarioBtn} ${regime === "efficient" ? styles.active : ""}`}
+                            onClick={() => handleScenarioChange("efficient")}
+                            style={{ "--active-color": "#4caf50" } as React.CSSProperties}
+                        >
+                            <span className={styles.scenarioTitle}>Normal Market</span>
+                            <span className={styles.scenarioDesc}>Efficient pricing. Random walk behavior.</span>
                         </div>
 
-                        {(orbMode !== 0) && (
-                            <div style={{
-                                marginTop: '12px',
-                                fontSize: '0.6rem',
-                                color: '#aaa',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                opacity: 0.8,
-                                animation: "fadeIn 0.5s ease"
-                            }}>
-                                {orbMode === 1 ? "Tracking institutional flows" : "Monitoring mean reversion"}
+                        <div
+                            className={`${styles.scenarioBtn} ${regime === "emerging" ? styles.active : ""}`}
+                            onClick={() => handleScenarioChange("emerging")}
+                            style={{ "--active-color": "#3b82f6" } as React.CSSProperties}
+                        >
+                            <span className={styles.scenarioTitle}>Predictability Emerging</span>
+                            <span className={styles.scenarioDesc}>Structure forming. Windows opening.</span>
+                        </div>
+
+                        <div
+                            className={`${styles.scenarioBtn} ${regime === "mechanical" ? styles.active : ""}`}
+                            onClick={() => handleScenarioChange("mechanical")}
+                            style={{ "--active-color": "#8b5cf6" } as React.CSSProperties}
+                        >
+                            <span className={styles.scenarioTitle}>Flow-Dominated Market</span>
+                            <span className={styles.scenarioDesc}>Mechanical behavior. High predictability.</span>
+                        </div>
+                    </div>
+
+                    {/* Stepper */}
+                    <div className={styles.stepperContainer}>
+                        {["efficient", "emerging", "mechanical"].map((step) => (
+                            <div
+                                key={step}
+                                className={`${styles.stepItem} ${regime === step ? styles.active : ""}`}
+                                onClick={() => handleScenarioChange(step as Regime)}
+                                style={{ "--active-color": step === "efficient" ? "#4caf50" : step === "emerging" ? "#3b82f6" : "#8b5cf6" } as React.CSSProperties}
+                            >
+                                {step}
                             </div>
-                        )}
+                        ))}
                     </div>
-                </div>
-
-                {/* Right Panel: Controls */}
-                <div className={`${styles.panel} ${styles.rightPanel}`}>
-                    <RegimeControl
-                        currentRegime={regime}
-                        onRegimeChange={setRegime}
-                        progress={progress}
-                        onProgressChange={handleProgressChange}
-                    />
-
-                    <div className={styles.regimeMarkers}>
-                        <div className={styles.marker} data-label="Efficient" onClick={() => jumpToRegime("efficient")} />
-                        <div className={styles.marker} data-label="Emerging" onClick={() => jumpToRegime("emerging")} />
-                        <div className={styles.marker} data-label="Mechanical" onClick={() => jumpToRegime("mechanical")} />
-                    </div>
-
-                    <div style={{ marginTop: "auto", fontSize: "0.75rem", color: "#444", lineHeight: "1.4" }}>
-                        <p className={styles.sectionLabel}>System Notes</p>
-                        <p>
-                            Interactive demo environment.
-                            Values are deterministic based on slider position.
-                            Click center orb to toggle interpretation views.
-                        </p>
-                    </div>
-                </div>
-
-                <div className={styles.demoDisclaimer}>
-                    Demo illustrates market regime concepts. It does not use live data.
                 </div>
             </main>
         </div>

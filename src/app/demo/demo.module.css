@@ -325,6 +325,7 @@
 .rangeInput {
     width: 100%;
     -webkit-appearance: none;
+    appearance: none;
     background: #222;
     height: 4px;
     border-radius: 2px;
@@ -362,4 +363,168 @@
     color: #333;
     font-size: 0.7rem;
     pointer-events: none;
+}
+
+/* --- NEW GUIDED UI --- */
+.scenarioBtn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #333;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.scenarioBtn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(-4px);
+    border-color: #555;
+}
+
+.scenarioBtn.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.scenarioBtn.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--active-color, #fff);
+}
+
+.scenarioTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.scenarioDesc {
+    font-size: 0.75rem;
+    color: #888;
+    line-height: 1.4;
+}
+
+.answerBlock {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #222;
+}
+
+.questionText {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.systemAnswer {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.05em;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #333;
+    border-radius: 4px;
+    display: inline-block;
+    min-width: 200px;
+    text-align: center;
+}
+
+.implicationsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.implicationItem {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    color: #ccc;
+    line-height: 1.5;
+}
+
+.implicationItem::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--active-color, #888);
+}
+
+.stepperContainer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 24px;
+    border-top: 1px solid #222;
+}
+
+.stepItem {
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: relative;
+    padding-top: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.stepItem::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background: #444;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.stepItem.active {
+    color: #fff;
+}
+
+.stepItem.active::before {
+    background: var(--active-color, #fff);
+    box-shadow: 0 0 10px var(--active-color);
+}
+
+.transitionOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 16px 32px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 99px;
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    z-index: 50;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.transitionOverlay.visible {
+    opacity: 1;
 }
