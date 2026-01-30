@@ -9,10 +9,15 @@ export function DemoDashboard() {
     const [regime, setRegime] = useState<Regime>("emerging");
     const [progress, setProgress] = useState(45);
     const [indexValue, setIndexValue] = useState(42.8);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+    // NEW INTERACTIONS
+    const [orbMode, setOrbMode] = useState(0); // 0: Structural, 1: Flow, 2: Decay
+    const [showStress, setShowStress] = useState(false);
+    const [snapActive, setSnapActive] = useState(false);
 
     // Deterministic updates based on interaction
     useEffect(() => {
-        // Simulate index value changing based on progress and regime
         let base = 0;
         if (regime === "efficient") base = 12.0;
         if (regime === "emerging") base = 45.0;
@@ -23,13 +28,20 @@ export function DemoDashboard() {
         setIndexValue(Number(value.toFixed(1)));
     }, [regime, progress]);
 
-    // Auto-switch regimes based on slider if user drags far
     const handleProgressChange = (val: number) => {
         setProgress(val);
+
+        // Snap Logic: 20 (Early), 50 (Peak), 80 (Decay)
+        const snaps = [20, 50, 80];
+        const isSnapping = snaps.some(s => Math.abs(val - s) < 3);
+
+        // Only update state if changed to avoid re-renders loop, though React handles basic equality
+        if (isSnapping !== snapActive) {
+            setSnapActive(isSnapping);
+        }
+
         if (val < 20) setRegime("efficient");
         else if (val > 80) setRegime("mechanical");
-        // Middle range preserves current or defaults to emerging if coming from extremes, 
-        // but let's keep it simple: stick to manual or "emerging" in middle.
         else if (val > 30 && val < 70 && regime === "efficient") setRegime("emerging");
         else if (val > 30 && val < 70 && regime === "mechanical") setRegime("emerging");
     };
@@ -45,8 +57,6 @@ export function DemoDashboard() {
         }
     };
 
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
     const handleMouseMove = (e: React.MouseEvent) => {
         setMousePos({ x: e.clientX, y: e.clientY });
     };
@@ -56,6 +66,16 @@ export function DemoDashboard() {
         if (target === "efficient") setProgress(10);
         if (target === "emerging") setProgress(50);
         if (target === "mechanical") setProgress(90);
+    };
+
+    const getStabilityWidth = () => {
+        if (showStress) return regime === "efficient" ? "10%" : regime === "emerging" ? "40%" : "70%";
+        return regime === "efficient" ? "90%" : regime === "emerging" ? "60%" : "30%";
+    };
+
+    const getStabilityColor = () => {
+        if (showStress) return "#8b5cf6";
+        return regime === "efficient" ? "#4caf50" : regime === "emerging" ? "#ff9800" : "#f44336";
     };
 
     return (
@@ -78,7 +98,10 @@ export function DemoDashboard() {
                     <div>
                         <label className={styles.sectionLabel}>Current Market State</label>
                         <div className={styles.tooltipTrigger}>
-                            <h2 className={styles.marketState}>
+                            <h2 className={styles.marketState} style={{
+                                textShadow: snapActive ? "0 0 15px rgba(255,255,255,0.3)" : "none",
+                                transition: "text-shadow 0.2s"
+                            }}>
                                 {regime === "efficient" && "Efficient / Random"}
                                 {regime === "emerging" && "Emerging Structure"}
                                 {regime === "mechanical" && "Mechanical Flow"}
@@ -122,51 +145,90 @@ export function DemoDashboard() {
                             </span>
                         </div>
 
-                        <div className={styles.stabilityContainer}>
-                            <label className={styles.sectionLabel}>System Stability</label>
-                            <div className={styles.stabilityBar}>
-                                <div className={styles.stabilityFill} style={{
-                                    width: regime === "efficient" ? "90%" : regime === "emerging" ? "60%" : "30%",
-                                    backgroundColor: regime === "efficient" ? "#4caf50" : regime === "emerging" ? "#ff9800" : "#f44336"
-                                }} />
+                        {/* Interactive Confidence Bar */}
+                        <div className={styles.stabilityContainer}
+                            onClick={() => setShowStress(!showStress)}
+                            style={{ cursor: "pointer" }}
+                        >
+                            <label className={styles.sectionLabel} style={{ display: "flex", justifyContent: "space-between" }}>
+                                {showStress ? "System Stress" : "System Stability"}
+                                <span style={{ opacity: 0.5, fontSize: '0.6rem' }}>CLICK TO TOGGLE</span>
+                            </label>
+                            <div className={styles.tooltipTrigger}>
+                                <div className={styles.stabilityBar}>
+                                    <div className={styles.stabilityFill} style={{
+                                        width: getStabilityWidth(),
+                                        backgroundColor: getStabilityColor()
+                                    }} />
+                                </div>
+                                <div className={styles.tooltipContent}>
+                                    {showStress ?
+                                        "Stress view shows instantaneous pressure from forced rebalancing." :
+                                        "Stability reflects how constrained market behavior is."}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Center: Visual Surface */}
-                <div className={styles.visualSurface}>
+                <div className={styles.visualSurface} style={{
+                    filter: snapActive ? "brightness(1.2)" : "none",
+                    transition: "filter 0.1s ease"
+                }}>
                     <div style={{ position: 'absolute', inset: 0, opacity: 0.6 }}>
                         <DemoSurface regime={regime} mousePosition={mousePos} />
                     </div>
 
-                    {/* Center Overlay for extra "tech" feel */}
-                    <div style={{
-                        zIndex: 5,
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        padding: '20px',
-                        borderRadius: '50%',
-                        width: '300px',
-                        height: '300px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: `0 0 60px ${regime === 'efficient' ? 'rgba(50,50,50,0.2)' :
+                    {/* Center Overlay: Interactive Core */}
+                    <div
+                        onClick={() => setOrbMode((orbMode + 1) % 3)}
+                        style={{
+                            zIndex: 5,
+                            border: `1px solid rgba(255,255,255,${orbMode !== 0 ? 0.3 : 0.1})`,
+                            padding: '20px',
+                            borderRadius: '50%',
+                            width: '300px',
+                            height: '300px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: `0 0 60px ${regime === 'efficient' ? 'rgba(50,50,50,0.2)' :
                                 regime === 'emerging' ? 'rgba(59, 130, 246, 0.2)' :
                                     'rgba(139, 92, 246, 0.2)'
-                            }`,
-                        transition: "box-shadow 1s ease"
-                    }}>
+                                }`,
+                            transition: "all 0.5s ease",
+                        }}>
                         <div style={{
                             textAlign: 'center',
                             color: regime === 'efficient' ? '#555' :
                                 regime === 'emerging' ? '#3b82f6' : '#8b5cf6',
-                            fontSize: '0.8rem',
+                            fontSize: orbMode === 0 ? '0.8rem' : '0.9rem',
                             letterSpacing: '0.2em',
-                            transition: "color 1s ease"
+                            fontWeight: orbMode !== 0 ? '600' : '400',
+                            transition: "all 0.3s ease",
+                            transform: snapActive ? "scale(1.05)" : "scale(1)"
                         }}>
-                            AWI-{Math.floor(indexValue)}
+                            {orbMode === 0 && `AWI-${Math.floor(indexValue)}`}
+                            {orbMode === 1 && "FLOW DOMINANCE"}
+                            {orbMode === 2 && "DECAY RISK"}
                         </div>
+
+                        {(orbMode !== 0) && (
+                            <div style={{
+                                marginTop: '12px',
+                                fontSize: '0.6rem',
+                                color: '#aaa',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                opacity: 0.8,
+                                animation: "fadeIn 0.5s ease"
+                            }}>
+                                {orbMode === 1 ? "Tracking institutional flows" : "Monitoring mean reversion"}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -190,7 +252,7 @@ export function DemoDashboard() {
                         <p>
                             Interactive demo environment.
                             Values are deterministic based on slider position.
-                            Hover over metrics for definitions.
+                            Click center orb to toggle interpretation views.
                         </p>
                     </div>
                 </div>

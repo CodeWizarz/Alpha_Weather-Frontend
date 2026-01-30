@@ -14,7 +14,7 @@ export function DemoLogin({ onLogin }: DemoLoginProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (username.toLowerCase() === "yc" && password === "yc") {
+        if (username.toLowerCase() === "demo" && password === "admin") {
             onLogin();
         } else {
             setError("Invalid credentials. Access is restricted.");
