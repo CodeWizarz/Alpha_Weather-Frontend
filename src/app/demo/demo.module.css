@@ -522,9 +522,59 @@
     backdrop-filter: blur(10px);
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
     opacity: 0;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.15s ease;
+    /* Updated duration */
 }
 
 .transitionOverlay.visible {
     opacity: 1;
+}
+
+/* --- POLISH ADDITIONS --- */
+.whyLink {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: #666;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+    display: block;
+}
+
+.whyLink:hover {
+    color: #fff;
+}
+
+.explanationBox {
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #333;
+    padding: 12px;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes flashEmphasis {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.5);
+    }
+
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+.systemAnswer.flash {
+    animation: flashEmphasis 0.6s ease;
 }

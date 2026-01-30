@@ -10,6 +10,8 @@ export function DemoDashboard() {
 
     const [showTransition, setShowTransition] = useState(false);
     const [orbTextIndex, setOrbTextIndex] = useState(0);
+    const [showWhy, setShowWhy] = useState(false);
+    const [triggerFlash, setTriggerFlash] = useState(false);
 
     // Automation for Orb Text
     useEffect(() => {
@@ -22,8 +24,21 @@ export function DemoDashboard() {
     const handleScenarioChange = (newRegime: Regime) => {
         if (newRegime !== regime) {
             setRegime(newRegime);
-            setShowTransition(true);
-            setTimeout(() => setShowTransition(false), 1500);
+
+            // 1. Explicit Regime Change Label
+            setShowTransition(false); // Reset to ensure animation replays if clicked quickly
+            setTimeout(() => {
+                setShowTransition(true);
+                // Fade out after 800ms visible + 150ms fade in = ~1000ms total
+                setTimeout(() => setShowTransition(false), 950);
+            }, 10);
+
+            // 2. Reset Why
+            setShowWhy(false);
+
+            // 3. Flash Emphasis
+            setTriggerFlash(false);
+            setTimeout(() => setTriggerFlash(true), 50);
         }
     };
 
@@ -32,6 +47,17 @@ export function DemoDashboard() {
             case "efficient": return { text: "NO", color: "#666" }; // Normal market = No structural alpha
             case "emerging": return { text: "CAUTION", color: "#3b82f6" };
             case "mechanical": return { text: "YES", color: "#8b5cf6" };
+        }
+    };
+
+    const getWhyExplanation = () => {
+        switch (regime) {
+            case "efficient":
+                return "Price changes are dominated by news arrival and noise. No persistent structure detected.";
+            case "emerging":
+                return "Liquidity pockets and correlated flows are beginning to form, but stability is incomplete.";
+            case "mechanical":
+                return "Passive rebalancing and volatility control are constraining price discovery.";
         }
     };
 
@@ -102,13 +128,27 @@ export function DemoDashboard() {
                 <div className={styles.panel} style={{ borderRight: '1px solid #222' }}>
                     <div className={styles.answerBlock}>
                         <label className={styles.questionText}>Question: Is this market worth deploying strategies into?</label>
-                        <div className={styles.systemAnswer} style={{
-                            borderColor: getAnswer().color,
-                            color: getAnswer().text === "NO" ? "#888" : getAnswer().color,
-                            boxShadow: getAnswer().text !== "NO" ? `0 0 20px ${getAnswer().color}40` : "none"
-                        }}>
+                        <div
+                            className={`${styles.systemAnswer} ${triggerFlash ? styles.flash : ""}`}
+                            style={{
+                                borderColor: getAnswer().color,
+                                color: getAnswer().text === "NO" ? "#888" : getAnswer().color,
+                                boxShadow: getAnswer().text !== "NO" ? `0 0 20px ${getAnswer().color}40` : "none"
+                            }}
+                        >
                             System Answer: {getAnswer().text}
                         </div>
+
+                        {/* Why Affordance */}
+                        <div className={styles.whyLink} onClick={() => setShowWhy(!showWhy)}>
+                            {showWhy ? "Hide Explanation" : "Why?"}
+                        </div>
+
+                        {showWhy && (
+                            <div className={styles.explanationBox}>
+                                {getWhyExplanation()}
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -159,7 +199,7 @@ export function DemoDashboard() {
 
                     {/* Transition Overlay */}
                     <div className={`${styles.transitionOverlay} ${showTransition ? styles.visible : ""}`}>
-                        Regime Shift Detected
+                        Market regime changed
                     </div>
 
                     {/* Demo Disclaimer */}
